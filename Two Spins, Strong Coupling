@@ -1,0 +1,71 @@
+GammaN1 = 1.2
+DeltaN1 = 0.1
+GammaN2 = 1
+DeltaN2 = 0.05
+
+N = 2
+spin = 1/2
+B = 1; % Magnetic Field
+J12 = 0.05 % Coupling constant
+states = (2*spin+1)*(2*spin+1)
+
+%LarmorF01 = -(1/2*pi)*GammaN1*(1-DeltaN1)*B;
+%LarmorF02 = -(1/2*pi)*GammaN2*(1-DeltaN2)*B;
+
+[StrongCoupling] = Hamiltonian(GammaN1, GammaN2, DeltaN1, DeltaN2, B, spin, J12, N)
+
+
+[HamEVecs, HamEVals] = eig(StrongCoupling);
+EVecs = HamEVecs;
+EVals = diag(HamEVals)
+
+n = 0;
+B = 1;
+for B = 1:0.1:3
+    n = n + 1;
+    [StrongCoupling] = Hamiltonian(GammaN1, GammaN2, DeltaN1, DeltaN2, B, spin, J12, N);
+    [HamEVecs, HamEVals] = eig(StrongCoupling);
+    EVals(:,n) = diag(HamEVals);
+end
+B = 1:0.1:3
+figure; hold on; 
+for i = 1:states
+    plot(B, EVals(i,:));
+    xlabel('Magnetic Field');
+    ylabel('Eigenvalues');
+    title('Eigenvalues against Magnetic field for two spins with Strong Coupling');
+end
+hold off;
+
+function [StrongCoupling] = Hamiltonian(GammaN1, GammaN2, DeltaN1, DeltaN2, ...
+    B, spin, J12, N)
+
+states = (2*spin+1)^N;
+LarmorF01 = -(1/2*pi)*GammaN1*(1-DeltaN1)*B;
+LarmorF02 = -(1/2*pi)*GammaN2*(1-DeltaN2)*B;
+StrongCoupling = zeros(states, states);
+
+Sum = LarmorF01 + LarmorF02;
+D = ((LarmorF01 - LarmorF02)^2 + J12^2)^(1/2); % 
+Sin2Theta = J12/D; % Strong Coupling parameter
+pm3 = 1;
+for i = 1:1:states  
+    if i > 2*spin+1 
+        pm1 = -1;
+    else 
+        pm1 = 1;
+    end
+    if rem((i), 2) == 0
+        pm2 = 1;
+            else 
+        pm2 = -1;
+    end
+    if rem((i), 2) == 0
+        pm3 = pm3*-1;
+    end
+        StrongCoupling(i,i) = pm1*spin*D - spin*Sum + pm2*spin*J12 + (1 + pm3*Sin2Theta) ;
+end
+return
+end
+
+
