@@ -1,0 +1,117 @@
+spin = 1/2
+N = 2
+states = (2*spin + 1)^N
+
+[Ix, Iy, Iz] = SpinMatrix(spin)
+s1z = kron(Iz, eye(2*spin+1))
+s2z = kron(eye(2*spin+1), Iz)
+sz = s1z + s2z
+s1x = kron(Ix, eye(2*spin+1));
+s2x = kron(eye(2*spin +1), Ix);
+sx = s1x + s2x;
+s1y = kron(Iy, eye(2*spin+1));
+s2y = kron(eye(2*spin+1), Iy);
+sy = s1y + s2y;
+
+
+gamma = 1; %Gyromagnetic Ratio
+B = 1; %Magnetic Field
+omega = gamma * B;
+H = -omega * sz
+
+[HamEVecs, HamEVals] = eig(H);
+EVecs = HamEVecs 
+EVals = diag(HamEVals)
+
+
+ExpectationVsz = zeros(length(states));
+ExpectationVs1z = zeros(length(states));
+ExpectationVs2z = zeros(length(states));
+ExpectationVsx = zeros(length(states));
+ExpectationVs1x = zeros(length(states));
+ExpectationVs2x = zeros(length(states));
+ExpectationVsy = zeros(length(states));
+ExpectationVs1y = zeros(length(states));
+ExpectationVs2y = zeros(length(states));
+
+for i = 1:1:states
+    ExpectationVsz(i) = EVecs(:, i)'*sz*EVecs(:, i);
+    ExpectationVs1z(i) = EVecs(:, i)'*s1z*EVecs(:, i);
+    ExpectationVs2z(i) = EVecs(:, i)'*s2z*EVecs(:, i);
+    ExpectationVsx(i) = EVecs(:, i)'*sx*EVecs(:, i);
+    ExpectationVs1x(i) = EVecs(:, i)'*s1x*EVecs(:, i);
+    ExpectationVs2x(i) = EVecs(:, i)'*s2x*EVecs(:, i);
+    ExpectationVsy(i) = EVecs(:, i)'*sy*EVecs(:, i);
+    ExpectationVs1y(i) = EVecs(:, i)'*s1y*EVecs(:, i);
+    ExpectationVs2y(i) = EVecs(:, i)'*s2y*EVecs(:, i);
+end
+
+EVals = diag(HamEVals)
+ExpectationVsz
+ExpectationVs1z
+ExpectationVs2z
+
+
+
+n = 0
+for B = -1:0.1:1
+    omega = -B * gamma;
+    n = n + 1;
+    H = omega * sz;
+    [HamEVecs, HamEVals] = eig(H);
+    EVals(:,n) = diag(HamEVals);
+    
+end
+B = -1:0.1:1;
+figure; hold on; 
+for i = 1:states
+    plot(B, EVals(i,:));
+    xlabel('Magnetic Field Strength');
+    ylabel('Eigenvalues');
+    title('Energy Levels against Magnetic Field for two spin half atoms');
+end
+hold off;
+
+
+
+n = 0
+for omega = -1:0.01:1
+    n = n + 1;
+    H = -omega * kron(Iz, Iz);
+    [HamEVecs, HamEVals] = eig(H);
+    EVecs = HamEVecs;
+    ExpectationVIz(n) = EVecs(:, 1)'*sz*EVecs(:, 1); 
+end
+omega = -1:0.01:1;
+figure; hold on; 
+plot(omega, ExpectationVIz);
+hold off;
+clear;
+
+
+function [Ix, Iy, Iz, SpinPlus, SpinMinus]=SpinMatrix(S)
+
+dim = 2*S+1; 
+Ix=zeros(dim,dim); Iy=zeros(dim,dim); Iz=zeros(dim,dim);
+SpinPlus=zeros(dim,dim); SpinMinus=zeros(dim,dim);
+
+j=0;
+for m=S:-1:-S 
+    j=j+1;
+ Iz(j,j)=m; 
+ f1=sqrt(S*(S+1)-m*(m+1)); 
+ if f1~=0 
+  SpinPlus(j-1,j)=f1;
+ end
+ f2=sqrt(S*(S+1)-m*(m-1)); 
+ if f2~=0 
+  SpinMinus(j+1,j)=f2; 
+ end
+
+end
+
+Ix=(SpinPlus+SpinMinus)/2; 
+Iy=(SpinPlus-SpinMinus)/(2*complex(0,1));
+
+return
+end
