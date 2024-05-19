@@ -1,0 +1,86 @@
+GammaN1 = 1
+DeltaN1 = 0.3
+GammaN2 = 1
+DeltaN2 = 0.2
+
+eye(4)
+
+N = 2
+spin = 1/2
+B = 1;      % Magnetic Field
+J12 = 0.2       % Coupling constant
+states = (2*spin+1)^N
+
+[ChemicalShiftCoupling] = Hamiltonian(GammaN1, GammaN2, DeltaN1, DeltaN2, B, spin, J12, N)
+[HamEVecs, HamEVals] = eig(ChemicalShiftCoupling);
+EVecs = HamEVecs;
+EVals = diag(HamEVals)
+ExpectationVsz = zeros(length(states));
+for i = 1:1:states
+    ExpectationVsz(i) = EVecs(:, i)'*ChemicalShiftCoupling*EVecs(:, i);
+end
+
+% Changing Gamma for the two particles, Plotting the EigenValues
+n = 0;
+B = 1;
+for B = -1:0.1:2
+    n = n + 1;
+    [ChemicalShiftCoupling] = Hamiltonian(GammaN1, GammaN2, DeltaN1, DeltaN2, B, spin, J12, N);
+    [HamEVecs, HamEVals] = eig(ChemicalShiftCoupling);
+    EVals(:,n) = diag(HamEVals);    
+end
+B = -1:0.1:2;
+figure; hold on; 
+for i = 1:states
+    plot(B, EVals(i,:));
+    xlabel('Gyromagnetic Ratio');
+    ylabel('Eigenvalues');
+    title('Eigenvalues for two spin half atoms');
+end
+hold off;
+
+
+n = 0;
+GammaN1 = 1.5;
+for B = -1:0.1:1
+    n = n + 1;
+    [ChemicalShiftCoupling] = Hamiltonian(GammaN1, GammaN2, DeltaN1, DeltaN2, B, spin, J12, N);
+    [HamEVecs, HamEVals] = eig(ChemicalShiftCoupling);
+    EVals(:,n) = diag(HamEVals);
+end
+B = -1:0.1:1;
+figure; hold on; 
+for i = 1:states
+    plot(B, EVals(i,:));
+    xlabel('Magnetic Field');
+    ylabel('Eigenvalues');
+    title('Eigenvalues against Changing Magnetic Field');
+end
+hold off;
+
+function [ChemicalShiftCoupling] = Hamiltonian(GammaN1, GammaN2, ...
+    DeltaN1, DeltaN2, B, spin, J12, N)
+states = (2*spin+1)^N;
+LarmorF01 = -(1/2*pi)*GammaN1*(1-DeltaN1)*B;
+LarmorF02 = -(1/2*pi)*GammaN2*(1-DeltaN2)*B;
+ChemicalShiftCoupling = zeros(states, states);
+
+
+for i = 1:1:states  
+    if i > 2*spin+1 
+        pm1 = -1;
+    else 
+        pm1 = 1;
+    end
+    if rem((i), 2) == 0
+        pm2 = -1;
+            else 
+        pm2 = 1;
+    end
+        ChemicalShiftCoupling(i,i) = pm1*spin*LarmorF01 + ...
+            pm2*spin*LarmorF02 + pm1*pm2*spin*spin*J12;
+end
+return
+end
+
+
