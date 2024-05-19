@@ -1,0 +1,78 @@
+GammaN1 = 1.0
+DeltaN1 = 1.0
+GammaN2 = 1
+DeltaN2 = 1.1
+GammaN3 = 1
+DeltaN3 = 1.2
+
+N = 3
+spin = 1/2;
+B = 1; %Magnetic Field
+J12 = 0.03 %Coupling constant between N1 and N2
+J13 = 0.05
+J23 = 0.1  
+states = (2*spin+1)^N
+
+
+[ChemicalShiftH] = Hamiltonian(DeltaN1, DeltaN2, DeltaN3, GammaN1, GammaN2, GammaN3, ...
+    J12, J13, J23, B, spin, N)
+
+[HamEVecs, HamEVals] = eig(ChemicalShiftH);
+EVecs = HamEVecs;
+EVals = diag(HamEVals);
+
+ExpectationVsz = zeros(length(states));
+for i = 1:1:states
+    ExpectationVsz(i) = EVecs(:, i)'*ChemicalShiftH*EVecs(:, i);
+end
+
+
+n = 0;
+for B = 1:0.1:3
+    n = n + 1;
+    [ChemicalShiftH] = Hamiltonian(DeltaN1, DeltaN2, DeltaN3, GammaN1, GammaN2, GammaN3, ...
+    J12, J13, J23, B, spin, N);
+    [HamEVecs, HamEVals] = eig(ChemicalShiftH);
+    EVals(:,n) = diag(HamEVals);
+end
+B = 1:0.1:3;
+figure; hold on; 
+for i = 1:states
+    plot(B, EVals(i,:));
+    xlabel('Magnetic Field');
+    ylabel('Eigenvalues');
+    title('Energy Levels against Magnetic Field for three spin half atoms');
+end
+hold off;
+
+function [ChemicalShiftH] = Hamiltonian(GammaN1, GammaN2, GammaN3, ...
+    DeltaN1, DeltaN2, DeltaN3, J12, J13, J23, B, spin, N)
+states = (2*spin+1)^N;
+LarmorF01 = -(1/2*pi)*GammaN1*(1-DeltaN1)*B;
+LarmorF02 = -(1/2*pi)*GammaN2*(1-DeltaN2)*B;
+LarmorF03 = -(1/2*pi)*GammaN3*(1-DeltaN3)*B;
+ChemicalShiftH = zeros(states, states);
+
+a = 0;
+pm1 = 1;
+for i = 1:1:states  
+    if rem((i), 2) == 0
+        pm2 = -1;
+            else 
+        pm2 = 1;
+    end
+    if i > 4 
+        pm3 = -1;
+            else 
+        pm3 = 1;
+    end
+        ChemicalShiftH(i,i) = pm1*spin*LarmorF01 + pm2*spin*LarmorF02 + pm3*spin*LarmorF03 + ...
+            pm1*pm2*pm3*spin*spin*J12 + pm1*pm2*pm3*spin*spin*J13 + pm1*pm2*pm3*spin*spin*J23;
+    if rem((i), 2) == 0
+        pm1 = pm1*-1;
+    end
+end
+return
+end
+
+
