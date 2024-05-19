@@ -1,0 +1,96 @@
+spin = 1/2
+states = 2*spin+1
+[Ix, Iy, Iz] = SpinMatrix(spin)
+
+gamma = 1; %Gyromagnetic Ratio
+B = 1; %Magnetic Field
+omega = gamma * B;
+H = -omega * Iz
+
+[HamEVecs, HamEVals] = eig(H);
+EVecs = HamEVecs 
+EVals = diag(HamEVals)
+
+
+ExpectationVsz = zeros(length(states));
+ExpectationVsy = zeros(length(states));
+ExpectationVsx = zeros(length(states));
+for i = 1:1:states
+    ExpectationVsz(i) = EVecs(:, i)'*Iz*EVecs(:, i);
+    ExpectationVsy(i) = EVecs(:, i)'*Iy*EVecs(:, i);
+    ExpectationVsx(i) = EVecs(:, i)'*Ix*EVecs(:, i);
+end
+ExpectationVsx
+ExpectationVsy
+ExpectationVsz
+
+
+
+n = 0
+for B = -1:0.1:1;
+    n = n + 1;
+    omega = -B * gamma;
+    H = omega * Iz;
+    [HamEVecs, HamEVals] = eig(H);
+    EVals(:,n) = diag(HamEVals);
+    
+end
+B = -1:0.1:1;
+figure; hold on; 
+for i = 1:states
+    plot(B, EVals(i,:));
+    xlabel('Magnetic Field Strength');
+    ylabel('Eigenvalues');
+    title('Eigenvalues against Magnetic field for a half spin atom');
+end
+hold off;
+
+
+
+n = 0
+for B = -1:0.01:1;
+    n = n + 1;
+    omega = -B * gamma;
+    H = omega * Iz;
+    [HamEVecs, HamEVals] = eig(H);
+    EVecs = HamEVecs;
+    ExpectationVsz(n) = EVecs(:, 1)'*Iz*EVecs(:, 1); 
+end
+B = -1:0.01:1;
+figure; hold on; 
+plot(B, ExpectationVsz);
+xlabel('Expectation Values');
+ylabel('Magnetic Field');
+title('Plot of Expectation values with ranging magnetic field');
+hold off;
+clear;
+
+
+function [Ix, Iy, Iz, SpinPlus, SpinMinus]=SpinMatrix(S)
+
+dim = 2*S+1; 
+Ix=zeros(dim,dim); Iy=zeros(dim,dim); Iz=zeros(dim,dim); 
+SpinPlus=zeros(dim,dim); SpinMinus=zeros(dim,dim);
+
+j=0;
+for m=S:-1:-S 
+    j=j+1;
+ Iz(j,j)=m;  
+ f1=sqrt(S*(S+1)-m*(m+1)); 
+ if f1~=0 
+  SpinPlus(j-1,j)=f1;
+ end
+ f2=sqrt(S*(S+1)-m*(m-1));  
+ if f2~=0 
+  SpinMinus(j+1,j)=f2; 
+ end
+
+end
+
+Ix=(SpinPlus+SpinMinus)/2; 
+Iy=(SpinPlus-SpinMinus)/(2*complex(0,1));
+
+return
+end
+
+
