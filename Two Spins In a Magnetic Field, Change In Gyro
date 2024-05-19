@@ -1,0 +1,136 @@
+spinP1 = 1/2
+spinP2 = 1
+GammaP1 = 1
+GammaP2 = 1
+statesP1 = 2*spinP1+1
+statesP2 = 2*spinP2+1
+states = (2*spinP1+1)*(2*spinP2+1)
+
+[Ix1, Iy1, Iz1] = SpinMatrix(spinP1)
+[Ix2, Iy2, Iz2] = SpinMatrix(spinP2)
+
+s1z = kron(GammaP1*Iz1, eye(2*spinP2+1))
+s2z = kron(eye(2*spinP1 +1), GammaP2*Iz2)
+sz = s1z + s2z
+
+s1x = kron(Ix1, eye(2*spinP2+1))*GammaP1;
+s2x = kron(eye(2*spinP1 +1), Ix2)*GammaP2;
+sx = s1x + s2x;
+
+s1y = kron(Iy1, eye(2*spinP2+1))*GammaP1;
+s2y = kron(eye(2*spinP1+1), Iy2)*GammaP2;
+sy = s1y + s2y;
+
+
+B = 1; %Magnetic Field
+H = -B * sz
+[HamEVecs, HamEVals] = eig(H);
+EVecs = HamEVecs 
+EVals = diag(HamEVals)
+
+ExpectationVsz = zeros(length(states));
+ExpectationVs1z = zeros(length(states));
+ExpectationVs2z = zeros(length(states));
+ExpectationVsx = zeros(length(states));
+ExpectationVs1x = zeros(length(states));
+ExpectationVs2x = zeros(length(states));
+ExpectationVsy = zeros(length(states));
+ExpectationVs1y = zeros(length(states));
+ExpectationVs2y = zeros(length(states));
+
+for i = 1:1:states
+    ExpectationVsz(i) = EVecs(:, i)'*sz*EVecs(:, i);
+    ExpectationVs1z(i) = EVecs(:, i)'*s1z*EVecs(:, i);
+    ExpectationVs2z(i) = EVecs(:, i)'*s2z*EVecs(:, i);
+    ExpectationVsx(i) = EVecs(:, i)'*sx*EVecs(:, i);
+    ExpectationVs1x(i) = EVecs(:, i)'*s1x*EVecs(:, i);
+    ExpectationVs2x(i) = EVecs(:, i)'*s2x*EVecs(:, i);
+    ExpectationVsy(i) = EVecs(:, i)'*sy*EVecs(:, i);
+    ExpectationVs1y(i) = EVecs(:, i)'*s1y*EVecs(:, i);
+    ExpectationVs2y(i) = EVecs(:, i)'*s2y*EVecs(:, i);
+end
+ExpectationVsz
+ExpectationVs1z
+ExpectationVs2z
+
+
+% Changing Gamma for one particle, Plotting the EigenValues
+n = 0;
+B = 1;
+for GammaP1 = 1:0.1:3
+    n = n + 1;
+    s1z = kron(GammaP1*Iz1, eye(2*spinP2+1));
+    s2z = kron(eye(2*spinP1 +1), GammaP2*Iz2);
+    sz = s1z + s2z;
+    H = -B * sz;
+    [HamEVecs, HamEVals] = eig(H);
+    EVals(:,n) = diag(HamEVals);    
+end
+GammaP1 = 1:0.1:3;
+figure; hold on; 
+for i = 1:states
+    plot(GammaP1, EVals(i,:));
+    xlabel('Gyromagnetic Ratio');
+    ylabel('Eigenvalues');
+    title('Eigenvalues against Gyromagnetic Ratio for two spin half atoms');
+end
+hold off;
+
+% Changing Magnetic Field, Plotting the Eigenvalues
+n = 0;
+GammaP1 = 1.5;
+for B = -1:0.1:1
+    n = n + 1;
+    s1z = kron(GammaP1*Iz1, eye(2*spinP2+1));
+    s2z = kron(eye(2*spinP1 +1), GammaP2*Iz2);
+    sz = s1z + s2z;
+    H = -B * sz;
+    [HamEVecs, HamEVals] = eig(H);
+    EVals(:,n) = diag(HamEVals); 
+end
+B = -1:0.1:1;
+figure; hold on; 
+for i = 1:states
+    plot(B, EVals(i,:));
+    xlabel('Gyromagnetic Ratio');
+    ylabel('Eigenvalues');
+    title('Eigenvalues for two spin half atoms');
+end
+hold off;
+
+n = 0;
+for B = -1:0.1:1
+    n = n + 1;
+    H = -B * sz;
+    [HamEVecs, HamEVals] = eig(H);
+    EVecs = HamEVecs;
+    ExpectationVsz(n) = EVecs(:, 1)'*sz*EVecs(:, 1); 
+end
+B = -1:0.1:1;
+figure; hold on; 
+plot(B, ExpectationVsz);
+hold off;
+clear;
+
+
+function [Ix, Iy, Iz, SpinPlus, SpinMinus]=SpinMatrix(S)
+dim = 2*S+1; 
+Ix=zeros(dim,dim); Iy=zeros(dim,dim); Iz=zeros(dim,dim); 
+SpinPlus=zeros(dim,dim); SpinMinus=zeros(dim,dim);
+j=0;
+for m=S:-1:-S 
+    j=j+1;
+ Iz(j,j)=m; 
+ f1=sqrt(S*(S+1)-m*(m+1)); 
+ if f1~=0 
+  SpinPlus(j-1,j)=f1;
+ end
+ f2=sqrt(S*(S+1)-m*(m-1));
+ if f2~=0 
+  SpinMinus(j+1,j)=f2;
+ end
+end
+Ix=(SpinPlus+SpinMinus)/2; 
+Iy=(SpinPlus-SpinMinus)/(2*complex(0,1));
+return
+end
