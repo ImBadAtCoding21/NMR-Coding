@@ -40,7 +40,7 @@ Cu2_atom_pos = [
     ]*a;
 %matrices of x, y, z positions of the Selenium and Copper sites as a
 %fraction of the unit cell. These are multiplied by the lattice constant,
-%a, to get the actual positions. 
+%a, to get the actual positions.
 
 
 
@@ -53,31 +53,86 @@ title('Strength of interaction vs. Radius');
 grid on;
 
 
-% Radius_array = 8:8;
-% Dipolar_contributions(Se1_atom_pos, Cu1_atom_pos, Radius_array, a, -3/2)
-% Dipolar_contributions(Se1_atom_pos, Cu2_atom_pos, Radius_array, a, 3/2)
-% Dipolar_contributions(Se2_atom_pos, Cu1_atom_pos, Radius_array, a, -3/2)
-% Dipolar_contributions(Se2_atom_pos, Cu2_atom_pos, Radius_array, a, 3/2)
+
+
+
+Radius_array = 2:8;
+range_interaction = zeros(1, size(Radius_array, 2));
+for i = 1:size(Radius_array, 2)
+    [Total_Dipole_Moment] = Hamiltonian(Se_atom_pos, Cu1_atom_pos, Cu2_atom_pos, Radius_array(i), a);
+    range_interaction(i) = Total_Dipole_Moment;
+    plot(Radius_array, range_interaction, '-o');
+    xlabel('Range of Interaction (Lattice Constants, a, 8.911*10^{-8} cm)');
+    ylabel('Total Dipole Field');
+    title('Total Dipole Field vs. Radius');
+    grid on;
+end
+
+
+
+
+Radius_array = 6:6;
+Hamiltonian(Se_atom_pos, Cu1_atom_pos, Cu2_atom_pos, Radius_array, a)
+
+
+
+
+Radius_array = 15:15;
+Dipolar_contributions_Out(Se1_atom_pos, Cu1_atom_pos, Radius_array, a)
+% Dipolar_contributions(Se1_atom_pos, Cu2_atom_pos, Radius_array, a)
+% Dipolar_contributions(Se2_atom_pos, Cu1_atom_pos, Radius_array, a)
+% Dipolar_contributions(Se2_atom_pos, Cu2_atom_pos, Radius_array, a)
 % to see detailed numbers for the dipole tensors
 
 
+
+
+
 Radius_array = 2:6;
-Converging(Se1_atom_pos, Cu1_atom_pos, Radius_array, a, -3/2)
-Converging(Se1_atom_pos, Cu2_atom_pos, Radius_array, a, 3/2)
-Converging(Se2_atom_pos, Cu1_atom_pos, Radius_array, a, -3/2)
-Converging(Se2_atom_pos, Cu2_atom_pos, Radius_array, a, 3/2)
+Converging(Se1_atom_pos, Cu1_atom_pos, Radius_array, a)
+% Converging(Se1_atom_pos, Cu2_atom_pos, Radius_array, a)
+% Converging(Se2_atom_pos, Cu1_atom_pos, Radius_array, a)
+% Converging(Se2_atom_pos, Cu2_atom_pos, Radius_array, a)
 %Attempts to get strength of the interactions at different ranges
 
 
-function Converging(Se_atom_pos, Cu_atom_pos, Radius_array, a, spin)
+function [Total_Dipole_Moment] = Hamiltonian(Se_atom_pos, Cu1_atom_pos, Cu2_atom_pos, Radius_array, a)
+
+%Constants for equations
+hbar = 1.0546*10^34; %reduced plancks constant
+gyro = 1.76*10^11; % gyromagnetic ratio of an electron
+g = 2.11; % Spectroscopic Ratio
+Ub = 9.274*10^-24; % Bohrs Magnetron
+q = 1/(gyro*hbar*g*Ub);
+M_j = -g*Ub; %spin will multiply shortly
+
+H = zeros(1, size(Se_atom_pos, 2));
+
+
+for i = 1:size(Se_atom_pos, 2)
+    [Diagonal_of_tensors] = Dipolar_contributions_Out(Se_atom_pos(:, i), Cu1_atom_pos, Radius_array, a);
+    Diag_Cu1 = Diagonal_of_tensors*M_j*(-3/2);
+    [Diagonal_of_tensors] = Dipolar_contributions_Out(Se_atom_pos(:, i), Cu2_atom_pos, Radius_array, a);
+    Diag_Cu2 = Diagonal_of_tensors*M_j*(3/2);
+    H(i) = q*(Diag_Cu1 + Diag_Cu2);
+end
+Total_Dipole_Moment = sum(H, 2)
+return
+end
+
+
+
+
+
+function Converging(Se_atom_pos, Cu_atom_pos, Radius_array, a)
 ZZ_value_total = zeros(1, size(Radius_array, 2));
 [ZZ_Value] = Dipolar_contributions(Se_atom_pos, Cu_atom_pos, ...
-    Radius_array, a, spin);
+    Radius_array, a);
 ZZ_value_total(1, :) = ZZ_value_total(1, :) + ZZ_Value(1, :)
 plot(Radius_array, ZZ_value_total, '-o');
-xlabel('Range of Dipolar Interaction (Lattice Constants)');
-ylabel('Trace Values for Dipolar Tensor');
-title('Trace Values against Interaction Range');
+xlabel('Interaction Range (Lattice Constants, a, 8.911*10^{-8} cm)');
+ylabel('Z values from Dipolar Tensor (cm^{-3})');
+title('Values from Dipolar Tensor vs Interaction Range');
 end
 
 
@@ -86,15 +141,8 @@ end
 
 
 function [ZZ_Value, Diagonal_of_tensors] = Dipolar_contributions(Se_atoms, ...
-    Cu_atom_pos, Radius_array, a, spin)
+    Cu_atom_pos, Radius_array, a)
 
-%Constants for equations
-hbar = 1.0546*10^34; %reduced plancks constant
-gyro = 1.76*10^11; % gyromagnetic ratio of an electron
-g = 2.11; % Spectroscopic Ratio
-Ub = 9.274*10^-24; % Bohrs Magnetron
-q = 1/(gyro*hbar*g*Ub);
-M_j = -g*Ub*spin;
 
 
 ZZ_Value = zeros(1, size(Radius_array, 2));
@@ -202,6 +250,123 @@ for One_Se = 1:size(Se_atoms, 2)
     ZZ_Value
     total_dipolar_tensor
     Diagonal_of_tensors
+    %gives the total
+end
+return
+end
+
+
+%Replicated Function With Different Showing Lines
+function [ZZ_Value, Diagonal_of_tensors] = Dipolar_contributions_Out(Se_atoms, ...
+    Cu_atom_pos, Radius_array, a)
+
+
+
+ZZ_Value = zeros(1, size(Radius_array, 2));
+for One_Se = 1:size(Se_atoms, 2)
+    for Radius_step = 1:size(Radius_array, 2)
+        dimensions = Radius_array(Radius_step)*2 + 1;
+        all_atoms = zeros(3, size(Cu_atom_pos, 2)*(dimensions^3));
+        column_bump = 0;
+
+        for i = 1:dimensions
+            for j = 1:dimensions
+                for k = 1:dimensions
+                    x_translation = (i - (dimensions + 1) / 2)*a;
+                    y_translation = (j - (dimensions + 1) / 2)*a;
+                    z_translation = (k - (dimensions + 1) / 2)*a;
+                    xyz_array = [x_translation, y_translation, z_translation];
+                    for xyz = 1:3
+                        for len = 1:size(Cu_atom_pos, 2)
+                            all_atoms(xyz, len + column_bump) = Cu_atom_pos(xyz, len) + xyz_array(xyz);
+                        end
+                    end
+                    column_bump = column_bump + size(Cu_atom_pos, 2);
+                end
+            end
+        end
+        all_atoms;
+        %all atom positions. Cycled through x y and z, replicating the unit
+        %cell in each direction positive and negative by the interaction
+        %range. So a range of 5 would mean +-5 in x y and z to give a total
+        %of (2*5 + 1)^3 cells
+        last_columns = all_atoms(:, end-(size(Cu_atom_pos, 2)-1):end);
+        first_columns = all_atoms(:, 1:(size(Cu_atom_pos, 2)));
+        sum_of_elements = zeros(size(first_columns));
+        for i = 1:(size(Cu_atom_pos, 2));
+            sum_of_elements(:, i) = last_columns(:, i) - first_columns(:, i);
+        end
+        %check to see the difference in x, y, z values from first and last
+        %cell created. As they are complete opposite boxes, it should be
+        %equal to double the interaction range
+        normalised_sum = sum_of_elements/a;
+        range = Radius_array(Radius_step)*2;
+
+
+        distance_array = zeros(1, size(all_atoms, 2));
+        filtered_Cu_pos = zeros(size(all_atoms));
+        removed_counter = 0;
+        for i = 1:size(all_atoms, 2)
+            Cu_to_Se_distance = (...
+                (all_atoms(1, i) - Se_atoms(1,One_Se))^2 + ...
+                (all_atoms(2, i) - Se_atoms(2,One_Se))^2 + ...
+                (all_atoms(3, i) - Se_atoms(3,One_Se))^2)^(1/2);
+            if Cu_to_Se_distance > Radius_array(Radius_step)*a
+                removed_counter = removed_counter + 1;
+            else
+                distance_array(1, i - removed_counter) = Cu_to_Se_distance;
+                filtered_Cu_pos(:, i - removed_counter) = all_atoms(:, i);
+            end
+        end
+        %filter for the Cu atoms, distances are found between the Se and Cu
+        %sites and if it is greater than the radius being cycled through
+        %then the atom is left out of the new array of positions
+        index_of_zero = find(distance_array == 0, 1);
+        if ~isempty(index_of_zero)
+            distance_array = distance_array(1:index_of_zero - 1);
+        end
+        index_of_zero = find(all(filtered_Cu_pos == 0, 1));
+        if ~isempty(index_of_zero)
+            filtered_Cu_pos = filtered_Cu_pos(:, 1:index_of_zero - 1);
+        end
+        %removal of zeros in each array
+        removed_counter;
+        %removal of zeros in each array
+        removed_counter/size(all_atoms, 2);
+        ((4/3)*pi*Radius_array(Radius_step)^3)/(dimensions^3);
+        %test to see how many atoms were removed and the predicted values
+        %kept, should sum to around 1
+
+
+
+        dipolar_tensor = zeros(3, 3);
+        total_dipolar_tensor = zeros(3, 3);
+        for i = 1:size(filtered_Cu_pos, 2)
+            for xyzCycle1 = 1:3
+                for xyzCycle2 = 1:3
+                    if xyzCycle1 == xyzCycle2
+                        dipolar_tensor(xyzCycle1, xyzCycle2) = -1/(distance_array(i))^3 + 3*((filtered_Cu_pos(xyzCycle1, i) - Se_atoms(xyzCycle1, One_Se))*(filtered_Cu_pos(xyzCycle2, i) - Se_atoms(xyzCycle2, One_Se)))/distance_array(i)^5;
+                    else
+                        dipolar_tensor(xyzCycle1, xyzCycle2) = 3*((filtered_Cu_pos(xyzCycle1, i) - Se_atoms(xyzCycle1, One_Se))*(filtered_Cu_pos(xyzCycle2, i) - Se_atoms(xyzCycle2, One_Se)))/(distance_array(i))^5;
+                    end
+                    total_dipolar_tensor(xyzCycle1, xyzCycle2) = total_dipolar_tensor(xyzCycle1, xyzCycle2) + dipolar_tensor(xyzCycle1, xyzCycle2);
+                end
+            end
+        end
+        %Cycles through each x, y, z vector to get a tensor for the dipolar
+        %contributios
+        Se_atoms(:, One_Se)/a;
+        %If you want to see a specific tensor for the atom site
+        [V, D] = eig(total_dipolar_tensor);
+        Diagonal_of_tensors = D;
+        ZZ_Value(Radius_step) = D(3, 3);
+        total_dipolar_tensor;
+        Diagonal_of_tensors;
+    end
+    Radius_array(Radius_step);
+    ZZ_Value;
+    total_dipolar_tensor;
+    Diagonal_of_tensors;
     %gives the total
 end
 return
